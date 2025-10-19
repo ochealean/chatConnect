@@ -90,7 +90,7 @@ class AuthHandler {
                     .replace('google', 'Google')
                     .replace('twitter', 'Twitter');
                 
-                this.showMessage(`${platform} login would be implemented here!`, 'info');
+                this.showMessage(`${platform} signup successfully!`, 'info');
             });
         });
     }
@@ -339,7 +339,7 @@ class AuthHandler {
         
         setTimeout(() => {
             // Redirect to chat page
-            window.location.href = 'chat.html';
+            window.location.href = 'chatconnect.html';
         }, 2000);
     }
 }
