@@ -1,5 +1,6 @@
 // chat.js
 import firebaseMethods from './firebasemethods/firebasemethods.js';
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 class ChatApp {
     constructor() {
@@ -9,7 +10,6 @@ class ChatApp {
     }
 
     async init() {
-        // Wait for DOM to be fully loaded
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.initializeApp());
         } else {
@@ -20,7 +20,6 @@ class ChatApp {
     async initializeApp() {
         console.log('Initializing chat app...');
         
-        // Check auth state
         firebaseMethods.onAuthStateChange((user) => {
             const loadingScreen = document.getElementById('loadingScreen');
             const chatContainer = document.getElementById('chatContainer');
@@ -30,13 +29,9 @@ class ChatApp {
                 this.currentUser = user;
                 console.log('User signed in:', user.email);
                 
-                // Update UI
                 this.updateUserInfo();
-                
-                // Load chats
                 this.loadChats();
                 
-                // Show chat interface
                 if (loadingScreen) loadingScreen.style.display = 'none';
                 if (chatContainer) chatContainer.style.display = 'flex';
                 if (loginContainer) loginContainer.style.display = 'none';
@@ -44,54 +39,34 @@ class ChatApp {
                 this.currentUser = null;
                 console.log('User signed out');
                 
-                // Show login interface
                 if (loadingScreen) loadingScreen.style.display = 'none';
                 if (chatContainer) chatContainer.style.display = 'none';
                 if (loginContainer) loginContainer.style.display = 'flex';
             }
         });
 
-        // Setup event listeners
         this.setupEventListeners();
     }
 
     updateUserInfo() {
         console.log('Updating user info...');
         
-        // Try different possible element IDs/selectors
-        const userName = document.getElementById('userName') || 
-                        document.querySelector('.user-info span') ||
-                        document.querySelector('.chat-header .user-info span');
-        
-        const userAvatar = document.getElementById('userAvatar') || 
-                          document.querySelector('.user-avatar') ||
-                          document.querySelector('.chat-header .user-avatar');
+        const userName = document.getElementById('userName');
+        const userAvatar = document.querySelector('.user-avatar');
 
         if (userName && this.currentUser) {
-            if (this.currentUser.displayName) {
-                userName.textContent = this.currentUser.displayName;
-            } else {
-                userName.textContent = this.currentUser.email;
-            }
+            userName.textContent = this.currentUser.displayName || this.currentUser.email;
         }
 
         if (userAvatar && this.currentUser) {
-            if (this.currentUser.displayName) {
-                userAvatar.textContent = this.currentUser.displayName.charAt(0).toUpperCase();
-            } else {
-                userAvatar.textContent = this.currentUser.email.charAt(0).toUpperCase();
-            }
+            userAvatar.textContent = (this.currentUser.displayName || this.currentUser.email).charAt(0).toUpperCase();
         }
     }
 
     setupEventListeners() {
         console.log('Setting up event listeners...');
         
-        // Logout button - try different selectors
-        const logoutBtn = document.getElementById('logoutBtn') || 
-                         document.querySelector('.logout-btn') ||
-                         document.querySelector('.chat-header button');
-        
+        const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -101,11 +76,7 @@ class ChatApp {
             console.warn('Logout button not found');
         }
 
-        // Send message button
-        const sendBtn = document.getElementById('sendMessageBtn') || 
-                       document.getElementById('sendBtn') ||
-                       document.querySelector('.chat-input button');
-        
+        const sendBtn = document.getElementById('sendMessageBtn');
         if (sendBtn) {
             sendBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -113,10 +84,7 @@ class ChatApp {
             });
         }
 
-        // Message input
-        const messageInput = document.getElementById('messageInput') || 
-                            document.querySelector('.chat-input input');
-        
+        const messageInput = document.getElementById('messageInput');
         if (messageInput) {
             messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -126,11 +94,7 @@ class ChatApp {
             });
         }
 
-        // New chat button
-        const newChatBtn = document.getElementById('newChatBtn') || 
-                          document.getElementById('new-chat-btn') ||
-                          document.querySelector('.new-chat-btn');
-        
+        const newChatBtn = document.getElementById('newChatBtn');
         if (newChatBtn) {
             newChatBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -138,17 +102,13 @@ class ChatApp {
             });
         }
 
-        // Search input
-        const searchInput = document.getElementById('searchInput') || 
-                           document.querySelector('.search-box input');
-        
+        const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.filterChats(e.target.value);
             });
         }
 
-        // Login form
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => {
@@ -157,7 +117,6 @@ class ChatApp {
             });
         }
 
-        // Signup form
         const signupForm = document.getElementById('signup-form');
         if (signupForm) {
             signupForm.addEventListener('submit', (e) => {
@@ -166,14 +125,12 @@ class ChatApp {
             });
         }
 
-        // Tab switching for login/signup
         const tabs = document.querySelectorAll('.tab');
         const forms = document.querySelectorAll('.form');
         
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabId = tab.getAttribute('data-tab');
-                
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 
@@ -195,7 +152,6 @@ class ChatApp {
 
         console.log('Loading chats for user:', this.currentUser.uid);
         
-        // Real-time listener for user's chats
         firebaseMethods.subscribeToUserChats(this.currentUser.uid, (chats) => {
             console.log('Received chats:', chats.length);
             this.displayChats(chats);
@@ -203,9 +159,7 @@ class ChatApp {
     }
 
     displayChats(chats) {
-        const chatsList = document.getElementById('chatsList') || 
-                         document.querySelector('.contacts') ||
-                         document.querySelector('.chats-list');
+        const chatsList = document.getElementById('chatsList');
         
         if (!chatsList) {
             console.warn('Chats list container not found');
@@ -224,7 +178,6 @@ class ChatApp {
                 </div>
             `;
 
-            // Add event listener to the new chat button
             const newChatBtn = chatsList.querySelector('.new-chat-btn');
             if (newChatBtn) {
                 newChatBtn.addEventListener('click', () => this.startNewChat());
@@ -244,14 +197,12 @@ class ChatApp {
             </div>
         `).join('');
 
-        // Add click listeners to chat items
         chatsList.querySelectorAll('.chat-item').forEach(item => {
             item.addEventListener('click', () => {
                 const chatId = item.getAttribute('data-chat-id');
                 const chat = chats.find(c => c.id === chatId);
                 this.selectChat(chat);
                 
-                // Update active state
                 chatsList.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
             });
@@ -264,38 +215,18 @@ class ChatApp {
         this.currentChat = chat;
         console.log('Selected chat:', chat.id);
         
-        // Update UI - try different selectors
-        const welcomeMessage = document.getElementById('welcomeMessage') || 
-                              document.querySelector('.welcome-state');
-        const currentChatHeader = document.getElementById('currentChatHeader') || 
-                                 document.querySelector('.current-chat-header');
-        const messagesContainer = document.getElementById('messagesContainer') || 
-                                 document.querySelector('.chat-messages');
-        const messageInputContainer = document.getElementById('messageInputContainer') || 
-                                     document.querySelector('.chat-input');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.querySelector('.chat-input');
 
-        if (welcomeMessage) welcomeMessage.style.display = 'none';
-        if (currentChatHeader) currentChatHeader.style.display = 'flex';
-        if (messagesContainer) messagesContainer.style.display = 'block';
-        if (messageInputContainer) messageInputContainer.style.display = 'flex';
+        if (chatMessages) chatMessages.style.display = 'block';
+        if (chatInput) chatInput.style.display = 'flex';
 
-        // Update chat info
-        const currentChatName = document.getElementById('currentChatName') || 
-                               document.querySelector('.current-chat-info h3');
-        const currentChatAvatar = document.getElementById('currentChatAvatar') || 
-                                 document.querySelector('.current-chat-avatar');
-
-        if (currentChatName) currentChatName.textContent = this.getChatName(chat);
-        if (currentChatAvatar) currentChatAvatar.textContent = this.getChatInitials(chat);
-
-        // Load messages
         this.loadMessages(chat.id);
     }
 
     loadMessages(chatId) {
         console.log('Loading messages for chat:', chatId);
         
-        // Real-time listener for messages
         firebaseMethods.subscribeToChatMessages(chatId, (messages) => {
             console.log('Received messages:', messages.length);
             this.displayMessages(messages);
@@ -303,8 +234,7 @@ class ChatApp {
     }
 
     displayMessages(messages) {
-        const messagesContainer = document.getElementById('messagesContainer') || 
-                                 document.querySelector('.chat-messages');
+        const messagesContainer = document.getElementById('chatMessages');
         
         if (!messagesContainer) {
             console.warn('Messages container not found');
@@ -321,13 +251,11 @@ class ChatApp {
             `;
         }).join('');
 
-        // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     async sendMessage() {
-        const messageInput = document.getElementById('messageInput') || 
-                            document.querySelector('.chat-input input');
+        const messageInput = document.getElementById('messageInput');
         const text = messageInput?.value.trim();
 
         if (!text || !this.currentChat) {
@@ -354,31 +282,76 @@ class ChatApp {
     }
 
     async startNewChat() {
-        const email = prompt('Enter the email address of the person you want to chat with:');
-        if (!email) return;
+        const searchInput = document.getElementById('searchInput');
+        const searchTerm = searchInput?.value.trim();
+
+        if (!searchTerm) {
+            this.showMessage('Please enter an email address to start a chat', 'error');
+            return;
+        }
 
         try {
-            const result = await firebaseMethods.searchUsers(email);
-            
-            if (result.success && result.users.length > 0) {
-                const user = result.users[0];
-                
-                const chatResult = await firebaseMethods.createChat({
-                    participants: [this.currentUser.uid, user.id],
-                    type: 'direct'
-                });
+            const result = await firebaseMethods.searchUsers(searchTerm);
 
-                if (chatResult.success) {
-                    this.showMessage('Chat created successfully!', 'success');
-                } else {
-                    this.showMessage('Failed to create chat: ' + chatResult.error, 'error');
-                }
-            } else {
+            if (!result.success) {
+                this.showMessage('Error searching users: ' + result.error, 'error');
+                return;
+            }
+
+            if (result.users.length === 0) {
                 this.showMessage('No user found with that email address', 'error');
+                return;
+            }
+
+            const user = result.users[0];
+
+            const existingChat = await this.findExistingChat(user.id);
+
+            if (existingChat) {
+                this.selectChat(existingChat);
+                this.showMessage('Opened existing chat', 'success');
+                return;
+            }
+
+            const chatResult = await firebaseMethods.createChat({
+                participants: [this.currentUser.uid, user.id],
+                type: 'direct',
+                name: user.displayName || user.email.split('@')[0]
+            });
+
+            if (chatResult.success) {
+                this.showMessage('Chat created successfully!', 'success');
+                if (searchInput) searchInput.value = '';
+                this.loadChats();
+            } else {
+                this.showMessage('Failed to create chat: ' + chatResult.error, 'error');
             }
         } catch (error) {
             console.error('Error creating chat:', error);
             this.showMessage('Error creating chat: ' + error.message, 'error');
+        }
+    }
+
+    async findExistingChat(otherUserId) {
+        try {
+            const chatsQuery = query(
+                collection(firebaseMethods.getDb(), "chats"),
+                where("participants", "array-contains", this.currentUser.uid)
+            );
+            const chatsSnapshot = await getDocs(chatsQuery);
+            
+            for (const doc of chatsSnapshot.docs) {
+                const chatData = doc.data();
+                if (chatData.type === 'direct' && 
+                    chatData.participants.includes(otherUserId) &&
+                    chatData.participants.length === 2) {
+                    return { id: doc.id, ...chatData };
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Error checking existing chats:', error);
+            return null;
         }
     }
 
@@ -408,13 +381,11 @@ class ChatApp {
             const authResult = await firebaseMethods.createAccountUsingEmailAndPassword(email, password);
             
             if (authResult.success) {
-                // Create user document
                 await firebaseMethods.createUserDocument(authResult.user.uid, {
                     email: email,
                     displayName: fullName
                 });
 
-                // Update profile
                 await firebaseMethods.updateUserProfile({
                     displayName: fullName
                 });
@@ -437,12 +408,11 @@ class ChatApp {
         }
     }
 
-    // Utility methods
     getChatInitials(chat) {
         if (chat.name) {
             return chat.name.charAt(0).toUpperCase();
         }
-        return 'F'; // Friend initial
+        return 'F';
     }
 
     getChatName(chat) {
@@ -474,7 +444,6 @@ class ChatApp {
     }
 
     showMessage(text, type) {
-        // Simple message display using alert for now
         console.log(`${type.toUpperCase()}: ${text}`);
         alert(`${type.toUpperCase()}: ${text}`);
     }
@@ -494,11 +463,9 @@ class ChatApp {
     }
 }
 
-// Initialize the app
-let chatApp;
 document.addEventListener('DOMContentLoaded', () => {
-    chatApp = new ChatApp();
-    window.chatApp = chatApp; // Make it globally available
+    const chatApp = new ChatApp();
+    window.chatApp = chatApp;
 });
 
 console.log('Chat app script loaded');

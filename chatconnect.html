@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -413,8 +414,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .form h2 {
@@ -501,7 +509,8 @@
             position: relative;
         }
 
-        .social-login p::before, .social-login p::after {
+        .social-login p::before,
+        .social-login p::after {
             content: "";
             position: absolute;
             top: 50%;
@@ -562,17 +571,18 @@
             .login-container {
                 flex-direction: column;
             }
-            
+
             .welcome-section {
                 padding: 40px 20px;
             }
-            
+
             .form-section {
                 padding: 40px 20px;
             }
         }
     </style>
 </head>
+
 <body>
     <!-- Loading Screen -->
     <div class="loading-container" id="loadingScreen">
@@ -596,7 +606,8 @@
                     <i class="fas fa-user"></i>
                 </div>
                 <span id="userName">User</span>
-                <button id="logoutBtn" style="background: none; border: none; color: white; margin-left: 15px; cursor: pointer;">
+                <button id="logoutBtn"
+                    style="background: none; border: none; color: white; margin-left: 15px; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
@@ -608,6 +619,10 @@
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Search contacts..." id="searchInput">
                     </div>
+                    <button class="new-chat-btn" id="newChatBtn"
+                        style="margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer;">
+                        <i class="fas fa-plus"></i> New Chat
+                    </button>
                 </div>
                 <div class="contacts" id="chatsList">
                     <!-- Chats will be loaded dynamically -->
@@ -631,7 +646,8 @@
     <div class="login-container" id="loginContainer">
         <div class="welcome-section">
             <h1>Welcome to ChatConnect</h1>
-            <p>Connect with friends, family, and colleagues in real-time with our secure and user-friendly chat platform.</p>
+            <p>Connect with friends, family, and colleagues in real-time with our secure and user-friendly chat
+                platform.</p>
             <div class="features">
                 <div class="feature">
                     <i class="fas fa-comments"></i>
@@ -651,14 +667,14 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="form-section">
             <div class="form-container">
                 <div class="tabs">
                     <div class="tab active" data-tab="login">Login</div>
                     <div class="tab" data-tab="signup">Sign Up</div>
                 </div>
-                
+
                 <form class="form active" id="login-form">
                     <h2>Login to Your Account</h2>
                     <div class="input-group">
@@ -676,7 +692,7 @@
                         <a href="#">Forgot password?</a>
                     </div>
                     <button type="submit" class="btn">Login</button>
-                    
+
                     <div class="social-login">
                         <p>Or login with</p>
                         <div class="social-icons">
@@ -692,7 +708,7 @@
                         </div>
                     </div>
                 </form>
-                
+
                 <form class="form" id="signup-form">
                     <h2>Create New Account</h2>
                     <div class="input-group">
@@ -717,7 +733,7 @@
                         </label>
                     </div>
                     <button type="submit" class="btn">Sign Up</button>
-                    
+
                     <div class="social-login">
                         <p>Or sign up with</p>
                         <div class="social-icons">
@@ -739,4 +755,5 @@
 
     <script type="module" src="chat.js"></script>
 </body>
+
 </html>
