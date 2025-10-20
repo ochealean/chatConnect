@@ -1,4 +1,3 @@
-// chat.js
 import firebaseMethods from './firebasemethods/firebasemethods.js';
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
@@ -24,6 +23,7 @@ class ChatApp {
             const loadingScreen = document.getElementById('loadingScreen');
             const chatContainer = document.getElementById('chatContainer');
             const loginContainer = document.getElementById('loginContainer');
+            const sidebar = document.getElementById('sidebar');
             
             if (user) {
                 this.currentUser = user;
@@ -35,6 +35,11 @@ class ChatApp {
                 if (loadingScreen) loadingScreen.style.display = 'none';
                 if (chatContainer) chatContainer.style.display = 'flex';
                 if (loginContainer) loginContainer.style.display = 'none';
+
+                // Show sidebar if no chat is selected initially, particularly on mobile
+                if (!this.currentChat && sidebar && window.innerWidth <= 768) {
+                    sidebar.classList.add('active');
+                }
             } else {
                 this.currentUser = null;
                 console.log('User signed out');
@@ -131,8 +136,12 @@ class ChatApp {
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabId = tab.getAttribute('data-tab');
-                tabs.forEach(t => t.classList.remove('active'));
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
                 tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
                 
                 forms.forEach(form => {
                     form.classList.remove('active');
@@ -142,6 +151,23 @@ class ChatApp {
                 });
             });
         });
+
+        // Hamburger menu and close sidebar button listeners
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebar = document.getElementById('sidebar');
+
+        if (hamburgerBtn && sidebar) {
+            hamburgerBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+        }
+
+        if (closeSidebarBtn && sidebar) {
+            closeSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+            });
+        }
     }
 
     loadChats() {
@@ -160,6 +186,7 @@ class ChatApp {
 
     displayChats(chats) {
         const chatsList = document.getElementById('chatsList');
+        const sidebar = document.getElementById('sidebar');
         
         if (!chatsList) {
             console.warn('Chats list container not found');
@@ -168,7 +195,7 @@ class ChatApp {
         
         if (chats.length === 0) {
             chatsList.innerHTML = `
-                <div class="no-chats" style="text-align: center; padding: 40px 20px; color: #a0a0b0;">
+                <div class="no-chats" style="text-align: center; padding: 40px 20px; color: #a0a0b0; align-items: center; display: flex; flex-direction: column;">
                     <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
                     <p>No chats yet</p>
                     <p style="font-size: 0.9rem; margin-top: 10px;">Start a new conversation!</p>
@@ -205,6 +232,11 @@ class ChatApp {
                 
                 chatsList.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
+
+                // Close sidebar on mobile after selecting a chat
+                if (sidebar && window.innerWidth <= 768) {
+                    sidebar.classList.remove('active');
+                }
             });
         });
     }
@@ -217,9 +249,13 @@ class ChatApp {
         
         const chatMessages = document.getElementById('chatMessages');
         const chatInput = document.querySelector('.chat-input');
+        const sidebar = document.getElementById('sidebar');
 
         if (chatMessages) chatMessages.style.display = 'block';
         if (chatInput) chatInput.style.display = 'flex';
+        if (sidebar && window.innerWidth <= 768) {
+            sidebar.classList.remove('active');
+        }
 
         this.loadMessages(chat.id);
     }
@@ -243,8 +279,11 @@ class ChatApp {
         
         messagesContainer.innerHTML = messages.map(message => {
             const isSent = message.senderId === this.currentUser.uid;
+            const ariaLabel = isSent 
+                ? 'Sent by you'
+                : `Received from ${message.senderName || 'Friend'}`;
             return `
-                <div class="message ${isSent ? 'sent' : 'received'}">
+                <div class="message ${isSent ? 'sent' : 'received'}" aria-label="${ariaLabel}">
                     <div class="message-text">${message.text}</div>
                     <div class="message-time">${this.formatTime(message.timestamp)}</div>
                 </div>
@@ -256,12 +295,27 @@ class ChatApp {
 
     async sendMessage() {
         const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendMessageBtn');
+        const sidebar = document.getElementById('sidebar');
         const text = messageInput?.value.trim();
 
-        if (!text || !this.currentChat) {
-            this.showMessage('Please select a chat and enter a message', 'error');
+        if (!this.currentChat) {
+            // Show sidebar instead of modal
+            if (sidebar) {
+                sidebar.classList.add('active');
+            }
+            this.showMessage('Please select a contact to start chatting', 'error');
             return;
         }
+
+        if (!text) {
+            this.showMessage('Please enter a message', 'error');
+            return;
+        }
+
+        // Disable send button and input to prevent spamming
+        if (sendBtn) sendBtn.disabled = true;
+        if (messageInput) messageInput.disabled = true;
 
         try {
             const result = await firebaseMethods.sendMessage(this.currentChat.id, {
@@ -272,12 +326,17 @@ class ChatApp {
             
             if (result.success) {
                 messageInput.value = '';
+                this.showMessage('Message sent successfully!', 'success');
             } else {
                 this.showMessage('Failed to send message: ' + result.error, 'error');
             }
         } catch (error) {
             console.error('Error sending message:', error);
             this.showMessage('Error sending message: ' + error.message, 'error');
+        } finally {
+            // Re-enable send button and input
+            if (sendBtn) sendBtn.disabled = false;
+            if (messageInput) messageInput.disabled = false;
         }
     }
 
@@ -445,7 +504,17 @@ class ChatApp {
 
     showMessage(text, type) {
         console.log(`${type.toUpperCase()}: ${text}`);
-        alert(`${type.toUpperCase()}: ${text}`);
+        const notification = document.getElementById('notification');
+        if (notification) {
+            notification.textContent = text;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        } else {
+            alert(`${type.toUpperCase()}: ${text}`);
+        }
     }
 
     filterChats(searchTerm) {
@@ -467,5 +536,3 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatApp = new ChatApp();
     window.chatApp = chatApp;
 });
-
-console.log('Chat app script loaded');
