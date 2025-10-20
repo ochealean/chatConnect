@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,8 +58,15 @@
         }
 
         @keyframes slideIn {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         /* Loading Screen Styles */
@@ -107,9 +115,17 @@
         }
 
         @keyframes loadProgress {
-            0% { width: 0%; }
-            50% { width: 80%; }
-            100% { width: 0%; }
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 80%;
+            }
+
+            100% {
+                width: 0%;
+            }
         }
 
         .loading-status {
@@ -348,15 +364,22 @@
         }
 
         @keyframes fadeInMessage {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.sent {
             align-self: flex-start;
             background: var(--primary);
             color: var(--white);
-            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
         }
 
         .message.sent::after {
@@ -374,7 +397,7 @@
             align-self: flex-end;
             background: #e2e8f0;
             color: var(--dark);
-            border-bottom-right-radius: 4px;
+            border-bottom-left-radius: 4px;
         }
 
         .message.received::after {
@@ -554,8 +577,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .form h2 {
@@ -830,6 +860,7 @@
         }
 
         @media (min-width: 1200px) {
+
             .chat-container,
             .login-container {
                 max-width: 1400px;
@@ -839,8 +870,24 @@
                 width: 350px;
             }
         }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* ensure skeletons are non-interactive until loaded */
+        .skeleton {
+            user-select: none;
+        }
     </style>
 </head>
+
 <body>
     <!-- Notification -->
     <div class="notification" id="notification"></div>
@@ -884,7 +931,8 @@
                     </button>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search contacts..." id="searchInput" aria-label="Search contacts">
+                        <input type="text" placeholder="Search contacts..." id="searchInput"
+                            aria-label="Search contacts">
                     </div>
                     <button class="new-chat-btn" id="newChatBtn" aria-label="Start new chat">
                         <i class="fas fa-plus"></i> New Chat
@@ -892,6 +940,85 @@
                 </div>
                 <div class="contacts" id="chatsList" aria-live="polite">
                     <!-- Chats will be loaded dynamically -->
+                     <!-- loader -->
+                    <div id="contactsLoader" role="status" aria-live="polite" aria-busy="true"
+                        style="padding:8px;display:flex;flex-direction:column;gap:12px;">
+                        <!-- Skeleton contact items -->
+                        <div class="contact skeleton"
+                            style="display:flex;align-items:center;padding:12px 15px;pointer-events:none;opacity:0.95;">
+                            <div class="contact-avatar" aria-hidden="true"
+                                style="background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;width:45px;height:45px;border-radius:50%;margin-right:12px;">
+                            </div>
+                            <div class="contact-info" style="flex:1;min-width:0;">
+                                <div
+                                    style="height:12px;width:40%;border-radius:6px;background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;margin-bottom:8px;">
+                                </div>
+                                <div
+                                    style="height:10px;width:60%;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                                </div>
+                            </div>
+                            <div class="contact-time" aria-hidden="true"
+                                style="width:36px;height:10px;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                            </div>
+                        </div>
+
+                        <div class="contact skeleton"
+                            style="display:flex;align-items:center;padding:12px 15px;pointer-events:none;opacity:0.95;">
+                            <div class="contact-avatar" aria-hidden="true"
+                                style="background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;width:45px;height:45px;border-radius:50%;margin-right:12px;">
+                            </div>
+                            <div class="contact-info" style="flex:1;min-width:0;">
+                                <div
+                                    style="height:12px;width:50%;border-radius:6px;background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;margin-bottom:8px;">
+                                </div>
+                                <div
+                                    style="height:10px;width:70%;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                                </div>
+                            </div>
+                            <div class="contact-time" aria-hidden="true"
+                                style="width:36px;height:10px;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                            </div>
+                        </div>
+
+                        <div class="contact skeleton"
+                            style="display:flex;align-items:center;padding:12px 15px;pointer-events:none;opacity:0.95;">
+                            <div class="contact-avatar" aria-hidden="true"
+                                style="background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;width:45px;height:45px;border-radius:50%;margin-right:12px;">
+                            </div>
+                            <div class="contact-info" style="flex:1;min-width:0;">
+                                <div
+                                    style="height:12px;width:35%;border-radius:6px;background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;margin-bottom:8px;">
+                                </div>
+                                <div
+                                    style="height:10px;width:55%;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                                </div>
+                            </div>
+                            <div class="contact-time" aria-hidden="true"
+                                style="width:36px;height:10px;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                            </div>
+                        </div>
+
+                        <div class="contact skeleton"
+                            style="display:flex;align-items:center;padding:12px 15px;pointer-events:none;opacity:0.95;">
+                            <div class="contact-avatar" aria-hidden="true"
+                                style="background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;width:45px;height:45px;border-radius:50%;margin-right:12px;">
+                            </div>
+                            <div class="contact-info" style="flex:1;min-width:0;">
+                                <div
+                                    style="height:12px;width:45%;border-radius:6px;background:linear-gradient(90deg,#ececec,#dddddd,#ececec);background-size:200% 100%;animation:shimmer 1.2s linear infinite;margin-bottom:8px;">
+                                </div>
+                                <div
+                                    style="height:10px;width:65%;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                                </div>
+                            </div>
+                            <div class="contact-time" aria-hidden="true"
+                                style="width:36px;height:10px;border-radius:6px;background:linear-gradient(90deg,#f3f3f3,#e6e6e6,#f3f3f3);background-size:200% 100%;animation:shimmer 1.2s linear infinite;">
+                            </div>
+                        </div>
+
+                        <style>
+                        </style>
+                    </div>
                 </div>
             </div>
             <div class="chat-area">
@@ -912,7 +1039,8 @@
     <div class="login-container" id="loginContainer">
         <div class="welcome-section">
             <h1>Welcome to ChatConnect</h1>
-            <p>Connect with friends, family, and colleagues in real-time with our secure and user-friendly chat platform.</p>
+            <p>Connect with friends, family, and colleagues in real-time with our secure and user-friendly chat
+                platform.</p>
             <div class="features">
                 <div class="feature">
                     <i class="fas fa-comments"></i>
@@ -994,7 +1122,8 @@
                     </div>
                     <div class="remember-forgot">
                         <label>
-                            <input type="checkbox" required aria-label="Agree to terms and conditions"> I agree to the <a href="#" aria-label="Terms and conditions">Terms & Conditions</a>
+                            <input type="checkbox" required aria-label="Agree to terms and conditions"> I agree to the
+                            <a href="#" aria-label="Terms and conditions">Terms & Conditions</a>
                         </label>
                     </div>
                     <button type="submit" class="btn" aria-label="Sign up">Sign Up</button>
@@ -1020,4 +1149,5 @@
 
     <script type="module" src="chat.js"></script>
 </body>
+
 </html>
