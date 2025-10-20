@@ -1,6 +1,3 @@
-// firebasemethods/firebasemethods.js
-
-// Import Firebase from CDN (like your demo)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import {
     getAuth,
@@ -8,7 +5,9 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    updateProfile
+    updateProfile,
+    sendPasswordResetEmail,
+    deleteUser
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import {
     getFirestore,
@@ -35,7 +34,7 @@ import {
     deleteObject
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
 
-// Your Firebase config
+// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyB488LH3wNouhkOhOweVe0Kr86lweaBFb0",
     authDomain: "messaging-app-35c60.firebaseapp.com",
@@ -51,7 +50,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Simple Firebase methods (like your demo)
+// Firebase methods class
 class FirebaseMethods {
     constructor() {
         this.auth = auth;
@@ -63,137 +62,155 @@ class FirebaseMethods {
 
     async createAccountUsingEmailAndPassword(email, password) {
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
             return { success: true, user: userCredential.user };
         } catch (error) {
+            console.error('createAccountUsingEmailAndPassword error:', error);
             return { success: false, error: error.message };
         }
     }
 
     async signInWithEmailAndPassword(email, password) {
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
             return { success: true, user: userCredential.user };
         } catch (error) {
+            console.error('signInWithEmailAndPassword error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
             return { success: false, error: error.message };
         }
     }
 
     async signOutUser() {
         try {
-            await signOut(auth);
+            await signOut(this.auth);
             return { success: true };
         } catch (error) {
+            console.error('signOutUser error:', error);
             return { success: false, error: error.message };
         }
     }
 
     async updateUserProfile(profileData) {
         try {
-            await updateProfile(auth.currentUser, profileData);
+            await updateProfile(this.auth.currentUser, profileData);
             return { success: true };
         } catch (error) {
+            console.error('updateUserProfile error:', error);
             return { success: false, error: error.message };
         }
     }
 
     async sendPasswordResetEmail(email) {
         try {
-            await sendPasswordResetEmail(auth, email);
+            await sendPasswordResetEmail(this.auth, email);
             return { success: true };
         } catch (error) {
+            console.error('sendPasswordResetEmail error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async deleteUser(user) {
+        try {
+            await deleteUser(user);
+            return { success: true };
+        } catch (error) {
+            console.error('deleteUser error:', error);
             return { success: false, error: error.message };
         }
     }
 
     onAuthStateChange(callback) {
-        return onAuthStateChanged(auth, callback);
+        return onAuthStateChanged(this.auth, callback);
     }
 
     getCurrentUser() {
-        return auth.currentUser;
+        return this.auth.currentUser;
     }
 
-    // ==================== FIRESTORE METHODS (Simple like demo) ====================
+    // ==================== FIRESTORE METHODS ====================
 
-    // Create user document (like your demo's addDoc)
-    async createUserDocument(userId, userData) {
+    async createUserDocument(userId, data) {
         try {
-            await setDoc(doc(db, "users", userId), {
-                ...userData,
-                createdAt: serverTimestamp()
-            });
+            const userRef = doc(this.db, 'users', userId);
+            await setDoc(userRef, data);
+            console.log('User document created for:', userId);
             return { success: true };
         } catch (error) {
+            console.error('createUserDocument error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
             return { success: false, error: error.message };
         }
     }
 
-    // Get user document
     async getUserDocument(userId) {
         try {
-            const userDoc = await getDoc(doc(db, "users", userId));
+            const userDoc = await getDoc(doc(this.db, "users", userId));
             if (userDoc.exists()) {
                 return { success: true, data: userDoc.data() };
             } else {
                 return { success: false, error: "User not found" };
             }
         } catch (error) {
+            console.error('getUserDocument error:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Update user document
     async updateUserDocument(userId, updates) {
         try {
-            await updateDoc(doc(db, "users", userId), updates);
+            await updateDoc(doc(this.db, "users", userId), updates);
             return { success: true };
         } catch (error) {
+            console.error('updateUserDocument error:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // ==================== CHAT METHODS ====================
-
-    // Create a new chat (like your demo's addDoc)
     async createChat(chatData) {
         try {
-            const docRef = await addDoc(collection(db, "chats"), {
+            const docRef = await addDoc(collection(this.db, "chats"), {
                 ...chatData,
                 createdAt: serverTimestamp(),
                 lastMessageAt: serverTimestamp()
             });
             return { success: true, chatId: docRef.id };
         } catch (error) {
+            console.error('createChat error:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Send a message (like your demo's addDoc)
     async sendMessage(chatId, messageData) {
         try {
-            const messageRef = await addDoc(collection(db, "chats", chatId, "messages"), {
+            const messageRef = await addDoc(collection(this.db, "chats", chatId, "messages"), {
                 ...messageData,
                 timestamp: serverTimestamp()
             });
 
-            // Update chat's last message
-            await updateDoc(doc(db, "chats", chatId), {
+            await updateDoc(doc(this.db, "chats", chatId), {
                 lastMessage: messageData.text,
                 lastMessageAt: serverTimestamp()
             });
 
             return { success: true, messageId: messageRef.id };
         } catch (error) {
+            console.error('sendMessage error:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Real-time listener for chat messages (like your demo's onSnapshot)
     subscribeToChatMessages(chatId, callback) {
         try {
             const messagesQuery = query(
-                collection(db, "chats", chatId, "messages"),
+                collection(this.db, "chats", chatId, "messages"),
                 orderBy("timestamp", "asc")
             );
 
@@ -203,6 +220,9 @@ class FirebaseMethods {
                     messages.push({ id: doc.id, ...doc.data() });
                 });
                 callback(messages);
+            }, (error) => {
+                console.error('subscribeToChatMessages error:', error);
+                callback([]);
             });
         } catch (error) {
             console.error('Error setting up message listener:', error);
@@ -211,12 +231,10 @@ class FirebaseMethods {
         }
     }
 
-    // Real-time listener for user chats (like your demo's onSnapshot)
     subscribeToUserChats(userId, callback) {
         try {
-            // Simple query without complex ordering to avoid index issues
             const chatsQuery = query(
-                collection(db, "chats"),
+                collection(this.db, "chats"),
                 where("participants", "array-contains", userId)
             );
 
@@ -226,7 +244,6 @@ class FirebaseMethods {
                     chats.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Sort manually on client side (newest first)
                 chats.sort((a, b) => {
                     const timeA = a.lastMessageAt?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
                     const timeB = b.lastMessageAt?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
@@ -234,6 +251,9 @@ class FirebaseMethods {
                 });
 
                 callback(chats);
+            }, (error) => {
+                console.error('subscribeToUserChats error:', error);
+                callback([]);
             });
         } catch (error) {
             console.error('Error setting up chats listener:', error);
@@ -244,15 +264,12 @@ class FirebaseMethods {
 
     async searchUsers(searchTerm) {
         try {
-            // Normalize search term
             const normalizedSearch = searchTerm.toLowerCase().trim();
-
-            // Query users collection with a case-insensitive partial match
             const usersQuery = query(
-                collection(db, "users"),
+                collection(this.db, "users"),
                 where("email", ">=", normalizedSearch),
                 where("email", "<=", normalizedSearch + '\uf8ff'),
-                limit(10) // Limit to 10 results for performance
+                limit(10)
             );
 
             const usersSnapshot = await getDocs(usersQuery);
@@ -270,16 +287,16 @@ class FirebaseMethods {
 
             return { success: true, users };
         } catch (error) {
-            console.error('Error searching users:', error);
+            console.error('searchUsers error:', error);
             return { success: false, error: error.message };
         }
     }
 
     // ==================== STORAGE METHODS ====================
 
-    async uploadFile(file, path = 'uploads') {
+    async uploadFile(file, path = 'Uploads') {
         try {
-            const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
+            const storageRef = ref(this.storage, `${path}/${Date.now()}_${file.name}`);
             const snapshot = await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(snapshot.ref);
 
@@ -289,6 +306,7 @@ class FirebaseMethods {
                 path: snapshot.ref.fullPath
             };
         } catch (error) {
+            console.error('uploadFile error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -299,10 +317,11 @@ class FirebaseMethods {
 
     async deleteFile(filePath) {
         try {
-            const fileRef = ref(storage, filePath);
+            const fileRef = ref(this.storage, filePath);
             await deleteObject(fileRef);
             return { success: true };
         } catch (error) {
+            console.error('deleteFile error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -313,12 +332,10 @@ class FirebaseMethods {
         return serverTimestamp();
     }
 
-    // Simple ID generator
     generateId() {
         return Math.random().toString(36).substring(2) + Date.now().toString(36);
     }
 }
 
-// Create and export instance (like your demo)
 const firebaseMethods = new FirebaseMethods();
 export default firebaseMethods;

@@ -1,4 +1,3 @@
-// login.js
 import firebaseMethods from './firebasemethods/firebasemethods.js';
 
 class AuthHandler {
@@ -8,16 +7,9 @@ class AuthHandler {
     }
 
     init() {
-        // Set up auth state listener
         this.setupAuthListener();
-        
-        // Set up form event listeners
         this.setupFormHandlers();
-        
-        // Set up tab switching
         this.setupTabSwitching();
-        
-        // Set up social login buttons
         this.setupSocialLoginButtons();
     }
 
@@ -38,22 +30,27 @@ class AuthHandler {
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
 
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleLogin(loginForm);
-        });
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleLogin(loginForm);
+            });
+        }
 
-        signupForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleSignup(signupForm);
-        });
+        if (signupForm) {
+            signupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleSignup(signupForm);
+            });
+        }
 
-        // Forgot password link
-        const forgotPasswordLink = loginForm.querySelector('a[href="#"]');
-        forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.handleForgotPassword();
-        });
+        const forgotPasswordLink = loginForm?.querySelector('a[href="#"]');
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleForgotPassword();
+            });
+        }
     }
 
     setupTabSwitching() {
@@ -63,12 +60,13 @@ class AuthHandler {
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabId = tab.getAttribute('data-tab');
-                
-                // Update active tab
-                tabs.forEach(t => t.classList.remove('active'));
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
                 tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
                 
-                // Show corresponding form
                 forms.forEach(form => {
                     form.classList.remove('active');
                     if (form.id === `${tabId}-form`) {
@@ -90,28 +88,26 @@ class AuthHandler {
                     .replace('google', 'Google')
                     .replace('twitter', 'Twitter');
                 
-                this.showMessage(`${platform} signup successfully!`, 'info');
+                this.showMessage(`${platform} signup not implemented yet`, 'info');
             });
         });
     }
 
     async handleLogin(form) {
-        const email = form.querySelector('input[type="email"]').value;
+        const email = form.querySelector('input[type="email"]').value.trim();
         const password = form.querySelector('input[type="password"]').value;
         const rememberMe = form.querySelector('input[type="checkbox"]').checked;
 
-        // Basic validation
         if (!this.validateEmail(email)) {
             this.showMessage('Please enter a valid email address', 'error');
             return;
         }
 
-        if (password.length < 6) {
-            this.showMessage('Password must be at least 6 characters', 'error');
+        if (!password) {
+            this.showMessage('Please enter a password', 'error');
             return;
         }
 
-        // Show loading state
         const submitButton = form.querySelector('.btn');
         const originalText = submitButton.textContent;
         submitButton.textContent = 'Logging in...';
@@ -122,86 +118,117 @@ class AuthHandler {
             
             if (result.success) {
                 this.showMessage('Login successful! Redirecting...', 'success');
-                
-                // Store remember me preference
                 if (rememberMe) {
                     localStorage.setItem('rememberMe', 'true');
                 }
-                
-                // Update user's last seen timestamp
                 if (result.user) {
-                    await firebaseMethods.updateUserDocument(result.user.uid, {
+                    const updateResult = await firebaseMethods.updateUserDocument(result.user.uid, {
                         lastSeen: firebaseMethods.getServerTimestamp()
                     });
+                    if (!updateResult.success) {
+                        console.warn('Failed to update lastSeen:', updateResult.error);
+                    }
                 }
             } else {
-                this.showMessage(result.error, 'error');
+                this.showMessage(`Login failed: ${result.error}`, 'error');
+                console.error('Login error details:', result.error);
             }
         } catch (error) {
-            this.showMessage('An unexpected error occurred', 'error');
-            console.error('Login error:', error);
+            this.showMessage(`Login error: ${error.message}`, 'error');
+            console.error('Login error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
         } finally {
-            // Restore button state
             submitButton.textContent = originalText;
             submitButton.disabled = false;
         }
     }
 
     async handleSignup(form) {
-        const fullName = form.querySelector('input[type="text"]').value;
-        const email = form.querySelectorAll('input[type="email"]')[0].value;
+        const fullName = form.querySelector('input[type="text"]').value.trim();
+        const email = form.querySelectorAll('input[type="email"]')[0].value.trim();
         const password = form.querySelectorAll('input[type="password"]')[0].value;
         const confirmPassword = form.querySelectorAll('input[type="password"]')[1].value;
         const agreeToTerms = form.querySelector('input[type="checkbox"]').checked;
 
-        // Validation
         if (!this.validateFormData({ fullName, email, password, confirmPassword, agreeToTerms })) {
             return;
         }
 
-        // Show loading state
         const submitButton = form.querySelector('.btn');
         const originalText = submitButton.textContent;
         submitButton.textContent = 'Creating Account...';
         submitButton.disabled = true;
 
         try {
-            // Create auth account
             const authResult = await firebaseMethods.createAccountUsingEmailAndPassword(email, password);
             
-            if (authResult.success) {
-                // Create user document in Firestore
-                const userDocResult = await firebaseMethods.createUserDocument(authResult.user.uid, {
-                    email: email,
-                    displayName: fullName,
-                    createdAt: firebaseMethods.getServerTimestamp(),
-                    lastSeen: firebaseMethods.getServerTimestamp()
-                });
-
-                if (userDocResult.success) {
-                    // Update profile with display name
-                    const profileResult = await firebaseMethods.updateUserProfile({
-                        displayName: fullName
-                    });
-
-                    if (profileResult.success) {
-                        this.showMessage('Account created successfully! Welcome to ChatConnect!', 'success');
-                    } else {
-                        this.showMessage('Account created but profile update failed: ' + profileResult.error, 'warning');
-                    }
-                } else {
-                    this.showMessage('Account created but user document failed: ' + userDocResult.error, 'warning');
-                }
-            } else {
-                this.showMessage(authResult.error, 'error');
+            if (!authResult.success) {
+                this.showMessage(`Signup failed: ${authResult.error}`, 'error');
+                return;
             }
+
+            const userData = {
+                email,
+                displayName: fullName,
+                createdAt: firebaseMethods.getServerTimestamp(),
+                lastSeen: firebaseMethods.getServerTimestamp()
+            };
+
+            // Wait briefly to ensure auth state propagation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const userDocResult = await this.retryOperation(() => 
+                firebaseMethods.createUserDocument(authResult.user.uid, userData), 3);
+            
+            if (!userDocResult.success) {
+                await firebaseMethods.deleteUser(authResult.user);
+                this.showMessage(`Failed to create user document: ${userDocResult.error}`, 'error');
+                console.error('User document creation failed:', userDocResult.error);
+                return;
+            }
+
+            const profileResult = await firebaseMethods.updateUserProfile({ displayName: fullName });
+            if (!profileResult.success) {
+                await firebaseMethods.deleteUser(authResult.user);
+                this.showMessage(`Failed to update profile: ${profileResult.error}`, 'error');
+                console.error('Profile update failed:', profileResult.error);
+                return;
+            }
+
+            this.showMessage('Account created successfully! Welcome to ChatConnect!', 'success');
         } catch (error) {
-            this.showMessage('An unexpected error occurred during signup', 'error');
-            console.error('Signup error:', error);
+            this.showMessage(`Signup failed: ${error.message}`, 'error');
+            console.error('Signup error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
         } finally {
-            // Restore button state
             submitButton.textContent = originalText;
             submitButton.disabled = false;
+        }
+    }
+
+    async retryOperation(operation, maxAttempts = 3, delayMs = 1000) {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const result = await operation();
+                return result;
+            } catch (error) {
+                if (attempt === maxAttempts) {
+                    console.error(`Operation failed after ${maxAttempts} attempts:`, {
+                        code: error.code,
+                        message: error.message,
+                        stack: error.stack
+                    });
+                    return { success: false, error: error.message };
+                }
+                console.warn(`Attempt ${attempt} failed, retrying in ${delayMs}ms...`, error.message);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
         }
     }
 
@@ -221,46 +248,44 @@ class AuthHandler {
             if (result.success) {
                 this.showMessage('Password reset email sent! Check your inbox.', 'success');
             } else {
-                this.showMessage(result.error, 'error');
+                this.showMessage(`Error sending reset email: ${result.error}`, 'error');
             }
         } catch (error) {
-            this.showMessage('An error occurred while sending reset email', 'error');
-            console.error('Password reset error:', error);
+            this.showMessage(`Error sending reset email: ${error.message}`, 'error');
+            console.error('Password reset error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
         }
     }
 
     validateFormData({ fullName, email, password, confirmPassword, agreeToTerms }) {
-        // Check if all fields are filled
         if (!fullName || !email || !password || !confirmPassword) {
             this.showMessage('Please fill in all fields', 'error');
             return false;
         }
 
-        // Validate full name
-        if (fullName.trim().length < 2) {
-            this.showMessage('Please enter your full name', 'error');
+        if (fullName.length < 2) {
+            this.showMessage('Please enter a valid full name (at least 2 characters)', 'error');
             return false;
         }
 
-        // Validate email
         if (!this.validateEmail(email)) {
             this.showMessage('Please enter a valid email address', 'error');
             return false;
         }
 
-        // Validate password strength
         if (password.length < 6) {
             this.showMessage('Password must be at least 6 characters long', 'error');
             return false;
         }
 
-        // Check if passwords match
         if (password !== confirmPassword) {
             this.showMessage('Passwords do not match', 'error');
             return false;
         }
 
-        // Check terms agreement
         if (!agreeToTerms) {
             this.showMessage('Please agree to the Terms & Conditions', 'error');
             return false;
@@ -275,18 +300,15 @@ class AuthHandler {
     }
 
     showMessage(message, type = 'info') {
-        // Remove existing message if any
         const existingMessage = document.querySelector('.auth-message');
         if (existingMessage) {
             existingMessage.remove();
         }
 
-        // Create message element
         const messageEl = document.createElement('div');
         messageEl.className = `auth-message auth-message-${type}`;
         messageEl.textContent = message;
 
-        // Add styles
         messageEl.style.cssText = `
             position: fixed;
             top: 20px;
@@ -305,10 +327,8 @@ class AuthHandler {
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         `;
 
-        // Add to document
         document.body.appendChild(messageEl);
 
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (messageEl.parentNode) {
                 messageEl.style.animation = 'slideOut 0.3s ease';
@@ -316,7 +336,6 @@ class AuthHandler {
             }
         }, 5000);
 
-        // Add CSS animations
         if (!document.querySelector('#auth-message-styles')) {
             const style = document.createElement('style');
             style.id = 'auth-message-styles';
@@ -336,15 +355,12 @@ class AuthHandler {
 
     redirectToChat() {
         this.showMessage('Authentication successful! Loading chat...', 'success');
-        
         setTimeout(() => {
-            // Redirect to chat page
             window.location.href = 'chatconnect.html';
         }, 2000);
     }
 }
 
-// Initialize the auth handler when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     new AuthHandler();
 });
